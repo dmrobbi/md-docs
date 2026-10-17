@@ -297,12 +297,16 @@ function fallbackRender(src) {
 }
 
 function renderMd(src) {
-  if (window.marked && typeof window.marked.parse === 'function') return window.marked.parse(src);
-  return fallbackRender(src);
+  var html = MDPipeline.render(src, MDPluginLoader.transformers());
+  if (html == null) return fallbackRender(src);
+  return html;
 }
 
 /* --- doc view --- */
 async function showDoc(id) {
+  if (docBusy) return;
+  docBusy = true;
+  lastDocId = id;
   let meta = null;
   try {
     const docs = docsCache || await fetchDocs();
@@ -311,6 +315,7 @@ async function showDoc(id) {
   const text = await getContent(id);
   if (text == null) {
     view.innerHTML = '<p class="empty">doc not found</p><p style="text-align:center"><a href="#/">back to list</a></p>';
+    docBusy = false;
     return;
   }
   const url = location.origin + location.pathname + '#/doc/' + encodeURIComponent(id);
@@ -325,6 +330,7 @@ async function showDoc(id) {
     <div class="meta"><strong>${esc(meta ? meta.title : id)}</strong>${meta && meta.description ? ' — ' + esc(meta.description) : ''}</div>
     <div class="copyrow"><input id="hashUrl" readonly value="${esc(url)}"></div>
     <article class="doc" id="docBody">${renderMd(text)}</article>`;
+  MDPluginLoader.enhance(document.getElementById('docBody'));
   const doCopy = () => {
     const inp = document.getElementById('hashUrl');
     const done = () => { inp.style.color = 'var(--text)'; };
@@ -343,7 +349,9 @@ async function showDoc(id) {
     const body = document.getElementById('docBody');
     if (showRaw) { body.innerHTML = '<pre><code>' + esc(text) + '</code></pre>'; e.target.textContent = 'Render'; }
     else { body.innerHTML = renderMd(text); e.target.textContent = 'Source'; }
+    MDPluginLoader.enhance(body);
   });
+  docBusy = false;
 }
 
 /* --- actions --- */

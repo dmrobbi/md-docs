@@ -75,9 +75,11 @@ thing1 instance reuse (already supported server-side).
   Opt-in rows = `default:false, egress:true` (12: census 11-12, 13-16,
   39, 44-46, 50-51-OSM-mode) + the two verify-rows flagged `verify:true`
   (search / dark-mode = check core first).
-- **Accept (tests/test-registry.js):** row count == census count; ids
-  unique; every js/css url = https; egress rows default-off; category
-  values = the census set.
+- **Accept (tests/test-registry.js):** plugin rows == 51 (the census-
+  derived count: 53 options - the #37 xychart merged-comment - the
+  #40/#41 one-module merge); ids unique; every js/css url = https;
+  egress rows default-off; gated rows default-off; the verify-kind rows
+  (2) = phase 7, never pane-toggleable.
 - **Tests:** test-registry.js only.
 
 ### T0.3 — settings store + lazy loader
@@ -95,15 +97,18 @@ thing1 instance reuse (already supported server-side).
 - **Tests:** test-settings.js only (loader DOM mocked).
 
 ### T0.4 — re-render pipeline (the ONE app.js edit)
-- **Files:** `public/app.js` (edit — this phase's only shared-file edit),
+- **Files:** `public/js/md-pipeline.js` (new), `public/app.js` (edit),
+  `public/index.html` (edit — the script tags for js/plugins.js,
+  js/plugin-loader.js, js/md-pipeline.js before app.js),
   `tests/test-pipeline.js` (new)
 - **Deps:** T0.2, T0.3
-- **Build:** the render fn becomes registry-driven: (1) start from a clean
-  `marked` copy; (2) for each enabled plugin with a transform, apply
-  `plugin.transform(marked)` in registry order; (3) `marked.parse(src)`;
-  (4) for each enabled plugin with an enhancer, run
-  `plugin.enhance(rootEl)` post-render IN ORDER; (5) re-render on any
-  setEnabled(); a double-render guard (in-flight render coalesces).
+- **Build:** the pipeline CORE = pure (no document) in md-pipeline.js:
+  `MDPipeline.render(src, transformers)` = marked.Marked() clean
+  instance -> the enabled transformers in the registry order ->
+  `.parse(src)`; app.js's renderMd = a thin delegate (the null ->
+  fallbackRender) + the showDoc add: `MDPluginLoader.enhance(docBody)`
+  post-set + a rerender export (`window.MDApp.rerender`), the
+  double-render coalesce guard in showDoc.
 - **Accept (tests/test-pipeline.js):** order determinism (the same input
   x2 = the same html — the regen gate); disabled plugins = never called;
   enhance receives the root; the coalesce guard fires.
