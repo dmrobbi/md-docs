@@ -2,9 +2,13 @@
 'use strict';
 
 const http = require('http');
+const https = require('https');
 const crypto = require('crypto');
+const os = require('os');
+const net = require('net');
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 const ROOT = __dirname;
 const CONF_PATH = process.env.MD_DOCS_CONF || path.join(ROOT, 'md-docs.conf');
@@ -31,6 +35,12 @@ const HOST = process.env.MD_DOCS_HOST || conf.host || '0.0.0.0';
 const PORT = parseInt(process.env.MD_DOCS_PORT || conf.port || '9991', 10);
 const MDS = path.resolve(process.env.MD_DOCS_DIR || conf.docsdir || path.join(ROOT, 'mds'));
 
+const truthy = (v) => /^(1|true|yes|on)$/i.test(String(v == null ? '' : v).trim());
+const TLS_ENABLED = process.env.MD_DOCS_TLS != null ? truthy(process.env.MD_DOCS_TLS) : truthy(conf.tls);
+const TLS_CERT_FILE = process.env.MD_DOCS_TLS_CERT || conf.tlscert || '';
+const TLS_KEY_FILE = process.env.MD_DOCS_TLS_KEY || conf.tlskey || '';
+const TLSDIR = path.join(ROOT, 'tls');
+
 const PUB = path.join(ROOT, 'public');
 const META = path.join(MDS, '.metadata.json');
 
@@ -53,6 +63,79 @@ const ID_RE = /^[a-z0-9][a-z0-9-]{0,79}$/;
 const MAX_BODY = 20 * 1024 * 1024;
 
 fs.mkdirSync(MDS, { recursive: true });
+
+/* ================= TLS credentials (system openssl for generation) ================= */
+
+function sanNamesFor(host) {
+  const names = new Set(['localhost']);
+  const h = String(host || '').split(' ')[0];
+  if (h && h !== '0.0.0.0' && h !== '::') names.add(h);
+  for (const ifs of Object.values(os.networkInterfaces())) {
+    for (const a of ifs || []) {
+      if (a.family === 'IPv4' && !a.internal) names.add(a.address);
+    }
+  }
+  return [...names];
+}
+
+function makeSelfSigned(certOut, keyOut, sanList, cn) {
+  const san = sanList.map((n) => (net.isIP(n) ? 'IP:' : 'DNS:') + n).join(',');
+  execFileSync('openssl', [
+    'req', '-x509', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:P-256',
+    '-sha256', '-nodes', '-days', '825',
+    '-subj', '/CN=' + cn,
+    '-addext', 'subjectAltName=' + san,
+    '-keyout', keyOut, '-out', certOut
+  ], { stdio: ['ignore', 'ignore', 'pipe'] });
+  fs.chmodSync(keyOut, 0o600);
+}
+
+function tlsCredentials() {
+  if (TLS_CERT_FILE && TLS_KEY_FILE) {
+    let cert, key;
+    try {
+      cert = fs.readFileSync(TLS_CERT_FILE, 'utf8');
+      key = fs.readFileSync(TLS_KEY_FILE, 'utf8');
+    } catch (e) {
+      console.error('[md-docs] FATAL: tls enabled but cert/key file missing or unreadable: ' +
+        (!fs.existsSync(TLS_CERT_FILE) ? TLS_CERT_FILE : TLS_KEY_FILE));
+      process.exit(1);
+    }
+    try {
+      new crypto.X509Certificate(cert); /* sanity: throws if bogus */
+    } catch (e) {
+      console.error('[md-docs] FATAL: tlsCert file is not a valid certificate (' + TLS_CERT_FILE + ')');
+      process.exit(1);
+    }
+    return { cert, key, mode: 'user certs (' + TLS_CERT_FILE + ')' };
+  }
+  /* generic self-signed, cached in <root>/tls (gitignored) */
+  const cp = path.join(TLSDIR, 'generic-cert.pem');
+  const kp = path.join(TLSDIR, 'generic-key.pem');
+  if (fs.existsSync(cp) && fs.existsSync(kp)) {
+    try {
+      const cert = fs.readFileSync(cp, 'utf8');
+      const key = fs.readFileSync(kp, 'utf8');
+      new crypto.X509Certificate(cert); /* sanity */
+      console.log('[md-docs] tls: reusing existing generic self-signed cert (' + cp + ')');
+      return { cert, key, mode: 'generic self-signed (cached)' };
+    } catch (e) {
+      console.error('[md-docs] tls: cached generic cert unreadable, regenerating');
+    }
+  }
+  fs.mkdirSync(TLSDIR, { recursive: true });
+  makeSelfSigned(cp, kp, sanNamesFor(HOST), 'md-docs');
+  const cert = fs.readFileSync(cp, 'utf8');
+  const key = fs.readFileSync(kp, 'utf8');
+  new crypto.X509Certificate(cert); /* verify what we just made */
+  console.log('[md-docs] tls: NO certs configured — generated generic self-signed cert: ' + cp);
+  return { cert, key, mode: 'generic self-signed (new)' };
+}
+
+let tlsCreds = null;
+if (TLS_ENABLED) tlsCreds = tlsCredentials();
+
+/* ================= data / API ================= */
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -145,7 +228,7 @@ function serveStatic(res, pathname) {
   });
 }
 
-const server = http.createServer(async (req, res) => {
+async function handleRequest(req, res) {
   try {
     const u = new URL(req.url, 'http://localhost');
     const pathname = decodeURIComponent(u.pathname);
@@ -205,9 +288,14 @@ const server = http.createServer(async (req, res) => {
     console.error('[md-docs] error:', e && e.message);
     try { sendJSON(res, 500, { error: 'server error: ' + (e && e.message) }); } catch (_) { /* socket gone */ }
   }
-});
+}
+
+const server = TLS_ENABLED
+  ? https.createServer(tlsCreds, handleRequest)
+  : http.createServer(handleRequest);
 
 server.listen(PORT, HOST, () => {
-  console.log('[md-docs] listening on http://' + HOST + ':' + PORT +
-    ' (conf: ' + CONF_PATH + ', docs dir: ' + MDS + ')');
+  const scheme = TLS_ENABLED ? 'https' : 'http';
+  console.log('[md-docs] listening on ' + scheme + '://' + HOST + ':' + PORT +
+    ' (conf: ' + CONF_PATH + ', docs dir: ' + MDS + (TLS_ENABLED ? ', tls: ' + tlsCreds.mode : '') + ')');
 });

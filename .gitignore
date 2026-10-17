@@ -1,3 +1,5 @@
 mds/
+tls/
+md-docs.local.conf
 *.tmp
 *.log

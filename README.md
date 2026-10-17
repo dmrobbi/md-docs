@@ -34,10 +34,22 @@ docsDir = mds
 
 # Optional: set to require a bearer token on every /api/ request.
 # token =
+
+# ---- HTTPS ----
+# Enable TLS on the listening port (true/false)
+tls = false
+
+# Your own certificate + key (PEM files, both required when provided).
+# Leave empty with tls = true to AUTO-GENERATE a generic self-signed cert
+# (825-day ECDSA P-256, CN=md-docs, SANs = localhost/hostname/IPv4s)
+# cached in tls/ (gitignored); reused on later boots.
+tlsCert =
+tlsKey =
 ```
 
-Precedence: env vars (`MD_DOCS_HOST` / `MD_DOCS_PORT` / `MD_DOCS_DIR` / `MD_DOCS_TOKEN`) override the
-conf file; the conf file overrides built-in defaults. Conf file path relocatable via `MD_DOCS_CONF`.
+Precedence: env vars (`MD_DOCS_HOST` / `MD_DOCS_PORT` / `MD_DOCS_DIR` / `MD_DOCS_TOKEN` /
+`MD_DOCS_TLS` / `MD_DOCS_TLS_CERT` / `MD_DOCS_TLS_KEY`) override the conf file; the conf
+file overrides built-in defaults. Conf file path relocatable via `MD_DOCS_CONF`.
 Restart the service after edits.
 
 ### Auth (the bearer gate)
