@@ -1,0 +1,9 @@
+[Unit]
+Description=md-docs markdown doc site (port per md-docs.conf)
+[Service]
+ExecStart=/usr/bin/node server.js
+WorkingDirectory=%h/md-docs
+Restart=on-failure
+RestartSec=3
+[Install]
+WantedBy=default.target
