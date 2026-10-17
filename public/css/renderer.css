@@ -1,0 +1,12 @@
+/* md-docs renderer-pane styles (Phase 1 / T1.1) */
+header .wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+header .grow, .rp-head .grow { flex: 1; }
+#rendererPane { border: 1px solid var(--line, #d8d8d8); border-radius: 8px; padding: 12px; margin: 10px 0; background: var(--panel, #fafafa); }
+#rendererPane[hidden] { display: none; }
+.rp-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.rp-group { margin: 10px 0 4px; font-weight: 600; font-size: 0.92em; }
+.rp-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; flex-wrap: wrap; }
+.rp-row.disabled { opacity: 0.55; }
+.rp-badge { font-size: 0.78em; border: 1px solid var(--line, #d8d8d8); border-radius: 4px; padding: 0 4px; color: var(--muted, #777); }
+.rp-badge.warn { color: #b26a00; border-color: #e0a35a; }
+.btn.tiny { font-size: 0.85em; }

@@ -354,6 +354,12 @@ plugin): detection + transform (`marked.use(...)`) + enhance
 
 ---
 
+## Status
+
+- phase 0 = landed (github 20680f8; internal mirrored; TREES-MATCH 21acdbbb; suite TESTS-OK 3/3)
+- phase 1 = landed (the Renderer pane popover + the egress rows; suite TESTS-OK 4/4; the front greps green)
+- phase 2 = next (the seven default plugins + the battery)
+
 ## Records
 - Waves land as daily-note sections (`memory/YYYY-MM-DD.md`, the gateway
   host) with the same-task IDs; the workspace commit closes each wave.

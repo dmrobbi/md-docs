@@ -6,14 +6,21 @@
 <title>MD Docs</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="css/renderer.css">
 </head>
 <body>
 <header>
   <div class="wrap">
     <span class="logo">📄 MD Docs</span>
     <span class="muted tiny">dropped-file reader &middot; hashed links</span>
+    <span class="grow"></span>
+    <button class="btn" id="rendererBtn">Renderer</button>
   </div>
 </header>
+<aside class="wrap"><div id="rendererPane" hidden>
+  <div class="rp-head"><strong>Renderer plugins</strong><span class="muted tiny grow" id="rpCount"></span><button class="btn tiny" id="rpClose" aria-label="close">&times;</button></div>
+  <div id="rpRows"></div>
+</div></aside>
 <main class="wrap" id="view"><p class="muted">loading&hellip;</p></main>
 <script src="vendor/marked.min.js"></script>
 <script src="js/plugins.js"></script>
