@@ -28,11 +28,16 @@ esac; done
 
 echo "== 1. copy tree to $ROOT"
 mkdir -p "$ROOT/mds"
-cp -f "$SRC/server.js" "$SRC/add.js" "$SRC/LICENSE" "$SRC/README.md" "$ROOT/"
-rm -rf "$ROOT/public" "$ROOT/deploy"
-cp -r "$SRC/public" "$ROOT/public"
-cp -r "$SRC/deploy" "$ROOT/deploy"
-chown -R "$SOC_USER:$SOC_USER" "$ROOT"
+if [ "$(realpath "$SRC")" != "$(realpath "$ROOT")" ]; then
+  cp -f "$SRC/server.js" "$SRC/add.js" "$SRC/LICENSE" "$SRC/README.md" "$ROOT/"
+  rm -rf "$ROOT/public" "$ROOT/deploy"
+  cp -r "$SRC/public" "$ROOT/public"
+  cp -r "$SRC/deploy" "$ROOT/deploy"
+  chown -R "$SOC_USER:$SOC_USER" "$ROOT"
+else
+  echo "   tree already in place at $ROOT (in-place install)"
+  chown -R "$SOC_USER:$SOC_USER" "$ROOT"
+fi
 
 echo "== 2. md-docs.conf (preserved if the target already has one)"
 if [ ! -f "$ROOT/md-docs.conf" ]; then
