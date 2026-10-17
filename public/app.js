@@ -303,7 +303,10 @@ function renderMd(src) {
 }
 
 /* --- doc view --- */
-async function showDoc(id) {
+var docBusy = false;
+var lastDocId = null;
+window.MDApp = { rerender: function () { if (lastDocId) showDoc(lastDocId); }, get currentDoc() { return lastDocId; } };
+async function showDoc(id, anchor) {
   if (docBusy) return;
   docBusy = true;
   lastDocId = id;
@@ -313,6 +316,7 @@ async function showDoc(id) {
     meta = docs.find((d) => d.id === id) || null;
   } catch (e) { /* non-fatal */ }
   const text = await getContent(id);
+  try { await MDPluginLoader.ensureActive(); } catch (err) { /* degrade: plain render */ }
   if (text == null) {
     view.innerHTML = '<p class="empty">doc not found</p><p style="text-align:center"><a href="#/">back to list</a></p>';
     docBusy = false;
@@ -331,6 +335,10 @@ async function showDoc(id) {
     <div class="copyrow"><input id="hashUrl" readonly value="${esc(url)}"></div>
     <article class="doc" id="docBody">${renderMd(text)}</article>`;
   MDPluginLoader.enhance(document.getElementById('docBody'));
+  if (anchor) {
+    var tEl = document.getElementById('mdp-' + anchor);
+    if (tEl && tEl.scrollIntoView) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
   const doCopy = () => {
     const inp = document.getElementById('hashUrl');
     const done = () => { inp.style.color = 'var(--text)'; };
@@ -383,6 +391,22 @@ async function removeDoc(id) {
   route();
 }
 
+/* in-page mdp anchors: prevent default hash routing, smooth-scroll to the
+ * target, keep the router state coherent via replaceState (footnote refs,
+ * backrefs, heading copy-links) */
+view.addEventListener('click', (e) => {
+  const a = e.target.closest('a[href^="#mdp-"]');
+  if (!a) return;
+  e.preventDefault();
+  const frag = decodeURIComponent(a.getAttribute('href').slice(1));
+  const tEl = document.getElementById(frag);
+  if (tEl && tEl.scrollIntoView) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const hh = parseHash();
+  if (hh.arg) {
+    try { history.replaceState(null, '', '#/doc/' + encodeURIComponent(hh.arg) + '/' + frag.replace(/^mdp-/, '')); } catch (err) {}
+  }
+});
+
 /* global delegated delete handling (cards + doc view) */
 view.addEventListener('click', (e) => {
   const b = e.target.closest('[data-del]');
@@ -396,11 +420,11 @@ view.addEventListener('click', (e) => {
 function parseHash() {
   const h = location.hash.replace(/^#\/?/, '');
   const parts = h.split('/');
-  return { page: parts[0] || 'list', arg: parts[1] || null };
+  return { page: parts[0] || 'list', arg: parts[1] || null, anchor: parts[2] ? decodeURIComponent(parts[2]) : null };
 }
 async function route() {
-  const { page, arg } = parseHash();
-  if (page === 'doc' && arg) return showDoc(decodeURIComponent(arg));
+  const { page, arg, anchor } = parseHash();
+  if (page === 'doc' && arg) return showDoc(decodeURIComponent(arg), anchor);
   return showList();
 }
 window.addEventListener('hashchange', route);

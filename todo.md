@@ -182,9 +182,12 @@ plugin): detection + transform (`marked.use(...)`) + enhance
 ### T2.4 — KaTeX + mhchem (census 17)
 - **Files:** `public/js/plug-katex.js`, `tests/test-katex.js`
 - **Deps:** T0.4
-- **Build:** KaTeX css+js + auto-render (CDN, lazy): inline `$..$`,
-  block `$$..$$`; mhchem macros for \ce{} chemistry; renderErrors =
-  visible-not-crash (the raw text remains).
+- **Build:** KaTeX css+js + auto-render (CDN, lazy): block `$$..$$` +
+  the bracket forms `\\[..\\]` / `\\(..\\)` — inline `$..$` deliberately
+  NOT matched (the currency false-positive class in real docs); mhchem
+  macros for \ce{} chemistry; renderErrors = visible-not-crash (the raw
+  text remains); the auto-render's ignoredTags = pre/code (the
+  math-in-code critical test's basis).
 - **Accept (tests):** THE CRITICAL ONE - math inside code fences /
   inline code = NEVER rendered (the escape order); inline + block +
   \ce{} cases; the bad-LaTeX = escaped raw text.
@@ -193,9 +196,12 @@ plugin): detection + transform (`marked.use(...)`) + enhance
 ### T2.5 — asciinema inline player (census 38)
 - **Files:** `public/js/plug-asciinema.js`, `tests/test-asciinema.js`
 - **Deps:** T0.4
-- **Build:** ```asciinema <https://...cast>``` fences → the lazy-loaded
-  player (CDN) rendering the cast inline; https-only enforcement; the
-  toggle-off = the fence falls back to a plain link.
+- **Build:** ```asciinema fences with the URL as the fence CONTENT
+  (marked v12 keeps only the first info-word — probed live; the
+  content-form is the supported shape) → the .mdp-cast placeholder
+  (https-only enforced — anything else = marked's default code render,
+  by design); the enhance = the player global present ? inline
+  AsciinemaPlayer.create : load-then-create : a plain link fallback box.
 - **Accept (tests):** the fence transform; the URL scheme check (https
   only); the non-.cast URL = the link fallback.
 
@@ -216,7 +222,12 @@ plugin): detection + transform (`marked.use(...)`) + enhance
 
 ### T2.8 — INT: default battery (phase gate)
 - **Files:** `public/js/plugins.js` (edit — the registry rows for 2.1-2.7,
-  `default:true`), `tests/battery-default.js` (new)
+  `default:true`, the module-file urls), `public/js/plugin-loader.js`
+  (edit — the composite transformers + ensureActive),
+  `public/app.js` (edit — the ensureActive await + the in-page mdp-anchor
+  delegation + the doc/anchor route form), `public/css/mdp-plugins.css`
+  (new), `public/index.html` (edit — the css link),
+  `tests/battery-default.js` (new)
 - **Deps:** T2.1-T2.7
 - **Build:** no new code; the row wiring + the battery: all 7 enabled
   together on a fixture doc (headings, math, fences, alerts, footnote,
@@ -358,7 +369,8 @@ plugin): detection + transform (`marked.use(...)`) + enhance
 
 - phase 0 = landed (github 20680f8; internal mirrored; TREES-MATCH 21acdbbb; suite TESTS-OK 3/3)
 - phase 1 = landed (the Renderer pane popover + the egress rows; suite TESTS-OK 4/4; the front greps green)
-- phase 2 = next (the seven default plugins + the battery)
+- phase 2 = landed (the seven default plugins live: footnotes / alerts / heading-ids+copy-link / KaTeX+mhchem / asciinema-inline-player / fence-chrome / reading-time; the composite loader + ensureActive; the app mdp-anchor + doc/anchor routes; suite TESTS-OK 12/12; front green)
+- phase 3 = next (the diagram family: mermaid flagship + the offline four + viz.js)
 
 ## Records
 - Waves land as daily-note sections (`memory/YYYY-MM-DD.md`, the gateway

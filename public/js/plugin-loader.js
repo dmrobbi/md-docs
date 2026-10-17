@@ -1,8 +1,16 @@
-/* md-docs plugin settings store + lazy loader (Phase 0 / T0.3).
+/* md-docs plugin settings store + lazy loader (T0.3; composite rewrite + ensureActive = T2.8).
  * localStorage['md-docs.plugins'] = {pluginId: bool} overrides; unset keys
  * merge with the registry defaults. Egress rows load only after
  * confirmEgress(). Script/link nodes are injected ONCE (id-tagged).
  * Test hooks: setStoreHost(o) / setInjectHost(o) override the closures.
+ *
+ * Registration shapes (plugins):
+ *   MDPluginUseObjects[id] = a full marked use-object ({hooks, renderer,
+ *     extensions, ...}) — hooks are CHAINED by the composite transformer
+ *     (marked v12 hooks are single-fn-per-instance; one shared
+ *     preprocess/postprocess pipeline in registry order).
+ *   MDPluginEnhancers[id] = (rootEl) => void — post-render DOM pass.
+ *   MDPluginTransformers[id] = (inst) => void — legacy direct path.
  */
 (function (g) {
   'use strict';
@@ -96,6 +104,20 @@
       } catch (e) { rej(e); }
     });
   }
+  /* ensureActive(): load every enabled plugin's module + assets, resolving
+   * even when some fail (degraded = plain marked rendering for those). */
+  function ensureActive() {
+    var reg = registry();
+    if (!reg) return Promise.resolve();
+    var enabled = getEnabled();
+    var ids = Object.keys(enabled).filter(function (k) { return enabled[k]; });
+    var jobs = ids.map(function (k) {
+      return ensureLoaded(k).catch(function (e) {
+        if (g.console && typeof console.warn === 'function') console.warn('[md-docs] plugin load failed:', k, e && e.message);
+      });
+    });
+    return Promise.all(jobs).then(function () { return ids.length; });
+  }
   function activeOrder(reg) {
     var enabled = getEnabled();
     var list = Object.keys(enabled).filter(function (k) { return enabled[k]; });
@@ -106,14 +128,49 @@
     });
     return list;
   }
+  /* the ONE composite transformer: chains hooks, applies the rest direct */
   function transformers() {
     var reg = registry();
-    if (!reg) return [];
-    return activeOrder(reg)
-      .filter(function (id) { return g.MDPluginTransformers && typeof g.MDPluginTransformers[id] === 'function'; })
-      .map(function (id) {
-        return { id: id, phase: reg.byId[id] ? reg.byId[id].phase : 999, fn: g.MDPluginTransformers[id] };
+    var ids = reg ? activeOrder(reg) : [];
+    var pres = [];
+    var posts = [];
+    var others = [];
+    ids.forEach(function (id) {
+      var use = (g.MDPluginUseObjects && g.MDPluginUseObjects[id]) ? g.MDPluginUseObjects[id] : null;
+      if (use && typeof use === 'object') {
+        if (use.hooks) {
+          if (typeof use.hooks.preprocess === 'function') pres.push(use.hooks.preprocess);
+          if (typeof use.hooks.postprocess === 'function') posts.push(use.hooks.postprocess);
+          var copy = Object.assign({}, use);
+          delete copy.hooks;
+          if (Object.keys(copy).length) others.push(copy);
+        } else {
+          others.push(use);
+        }
+      } else if (g.MDPluginTransformers && typeof g.MDPluginTransformers[id] === 'function') {
+        var legacy = g.MDPluginTransformers[id];
+        others.push(function (inst) { legacy(inst); });
+      }
+    });
+    var composite = function (inst) {
+      others.forEach(function (o) {
+        if (typeof o === 'function') o(inst);
+        else if (o && Object.keys(o).length) inst.use(o);
       });
+      if (pres.length || posts.length) {
+        inst.use({
+          hooks: {
+            preprocess: function (src) {
+              return pres.length ? pres.reduce(function (acc, fn) { return fn(acc); }, src) : src;
+            },
+            postprocess: function (html) {
+              return posts.length ? posts.reduce(function (acc, fn) { return fn(acc); }, html) : html;
+            },
+          },
+        });
+      }
+    };
+    return [{ id: 'md-composite', phase: 0, fn: composite }];
   }
   function enhance(rootEl) {
     var reg = registry();
@@ -130,6 +187,7 @@
     getEnabled: getEnabled,
     setEnabled: setEnabled,
     ensureLoaded: ensureLoaded,
+    ensureActive: ensureActive,
     transformers: transformers,
     enhance: enhance,
     confirmEgress: confirmEgress,

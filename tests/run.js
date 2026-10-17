@@ -11,7 +11,7 @@ const STUB = 'test-selftest-stub.js';
 
 function discover(dir) {
   return fs.readdirSync(dir)
-    .filter((f) => /^test-.*\.js$/.test(f))
+    .filter((f) => /^(test|battery)-.*\.js$/.test(f))
     .sort();
 }
 

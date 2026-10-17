@@ -54,7 +54,9 @@ global.MDPlugins.rows.push(
 );
 savedState = JSON.stringify({ zplugin: true, aplugin: true, mplugin: true, disabled: false });
 const list = loader.transformers();
-assert.deepStrictEqual(list.map((t) => t.id), ['aplugin', 'mplugin', 'zplugin'], 'registry order (phase, id; disabled excluded)');
+assert.strictEqual(list.length, 1, 'single composite entry');
+assert.strictEqual(list[0].id, 'md-composite', 'composite id');
+assert.strictEqual(typeof list[0].fn, 'function', 'composite fn callable');
 
 let enhanced = [];
 global.MDPluginEnhancers = {

@@ -16,10 +16,10 @@ assert.strictEqual(plugins.length, 51, 'plugin row count (census-derived)');
 const ids = reg.rows.map((r) => r.id);
 assert.strictEqual(new Set(ids).size, ids.length, 'unique ids');
 
-// every https url; no http; no non-https schemes
+// every js/css url = https OR a tool-internal module path (js/…, css/…)
 for (const r of plugins) {
-  for (const u of (r.urls && r.urls.js) || []) assert.ok(u.startsWith('https://'), 'https js: ' + u);
-  for (const u of (r.urls && r.urls.css) || []) assert.ok(u.startsWith('https://'), 'https css: ' + u);
+  for (const u of (r.urls && r.urls.js) || []) assert.ok(/^https:\/\//.test(u) || /^(js|css)\//.test(u), 'https-or-internal js: ' + u);
+  for (const u of (r.urls && r.urls.css) || []) assert.ok(/^https:\/\//.test(u) || /^(js|css)\//.test(u), 'https-or-internal css: ' + u);
 }
 
 // egress rows: default off, pane-gated
