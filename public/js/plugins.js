@@ -89,9 +89,9 @@
     p('molecule', 48, 'Molecule viewer (SMILES)', 'maps', null, { gated: true }),
     p('readingtime', 49, 'Reading time + word count', 'experience', { js: ['js/plug-readingtime.js'] }, { default: true, phase: 2 }),
     p('autotoc', 50, 'Auto TOC', 'experience', null, { gated: true }),
-    p('backlinks', 51, 'Backlinks', 'experience', null, { phase: 6 }),
-    p('slides', 52, 'Slideshow mode', 'experience', null, { phase: 6 }),
-    p('printcss', 53, 'Print / PDF stylesheet', 'experience', null, { phase: 6 }),
+    p('backlinks', 51, 'Backlinks', 'experience', { js: ['js/plug-backlinks.js'] }, { phase: 6 }),
+    p('slides', 52, 'Slideshow mode', 'experience', { js: ['js/plug-slides.js'] }, { phase: 6 }),
+    p('printcss', 53, 'Print / PDF stylesheet', 'experience', { js: ['js/plug-printcss.js'], css: ['css/print.css'] }, { phase: 6 }),
     p('search-verify', null, 'search (core check)', 'experience', null, { kind: 'verify', phase: 7 }),
     p('darkmode-verify', null, 'dark mode (core check)', 'experience', null, { kind: 'verify', phase: 7 }),
   ];

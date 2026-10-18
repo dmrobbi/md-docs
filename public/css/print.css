@@ -1,0 +1,62 @@
+/* md-docs print/PDF stylesheet (census 53, T6.3).
+ * Every rule lives inside @media print: the loader injects this file as a
+ * plain stylesheet when the printcss row is enabled, and the scoping keeps
+ * the screen view untouched. Page-break-aware print view:
+ *   - the app chrome + the plugin controls hide;
+ *   - headings keep their following block with them (break-after: avoid);
+ *   - the block-ish containers (table/figure/callouts/diagrams/charts/
+ *     maps/casts) never straddle a page break;
+ *   - long code fences wrap instead of clipping;
+ *   - external links print their href (the offline-usable paper trail);
+ *   - math (KaTeX) + mermaid/DOM svg/canvas print in-flow with colors
+ *     kept (print-color-adjust: exact) — they are static DOM at print
+ *     time because the enhance passes ran when the doc opened.
+ */
+@media print {
+  @page { margin: 1.6cm; }
+
+  #view .topbar, #view .meta, #view .copyrow,
+  #rendererBtn, #rendererPane,
+  .addform, .controls, .statusline, .pager,
+  .mdp-slides-ctl, .mdp-print-ctl, .mdp-backlinks-status {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+  .wrap {
+    max-width: 100% !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  article.doc, article.doc * { background: transparent !important; }
+
+  h1, h2, h3, h4 { break-after: avoid; page-break-after: avoid; }
+  table, figure, tr, img, canvas, svg,
+  .mdp-callout, .mdp-diagram, .mdp-chart, .mdp-map, .mdp-cast {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+  }
+  img, canvas, svg, .mdp-diagram, .mdp-map, .mdp-chart, .mdp-cast {
+    max-width: 100% !important;
+  }
+
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #444;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
