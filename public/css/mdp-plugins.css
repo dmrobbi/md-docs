@@ -39,3 +39,8 @@
 /* phase-3 diagram boxes */
 .mdp-diagram { margin: 1.2em 0; padding: 10px; border: 1px solid var(--line, #d8d8d8); border-radius: 6px; overflow-x: auto; }
 .mdp-diagram svg { max-width: 100%; height: auto; }
+
+/* phase-5 charts + maps */
+.mdp-chart { margin: 1.2em 0; padding: 10px; border: 1px solid var(--line, #d8d8d8); border-radius: 6px; max-width: 100%; }
+.mdp-chart canvas { max-width: 100%; }
+.mdp-map { margin: 1.2em 0; border: 1px solid var(--line, #d8d8d8); border-radius: 6px; }

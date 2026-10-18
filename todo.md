@@ -375,7 +375,8 @@ plugin): detection + transform (`marked.use(...)`) + enhance
 - phase 2 = landed (the seven default plugins live: footnotes / alerts / heading-ids+copy-link / KaTeX+mhchem / asciinema-inline-player / fence-chrome / reading-time; the composite loader + ensureActive; the app mdp-anchor + doc/anchor routes; suite TESTS-OK 12/12; front green)
 - phase 3 = landed (the diagram family: mermaid + nomnoml + mscgen + wavedrom + viz.js-graphviz; pikchr = the egress-row decision documented; suite TESTS-OK 18/18; front green)
 - phase 4 = landed (syntax + media: admonitions, attributes, emoji, def-lists (the collapsed + separate forms), front-matter (preprocess), figures, interactive tasklists (persisted), media players, lightbox, pdf-embeds (dependency-free native embed); suite TESTS-OK 29/29; front green)
-- phase 5 = next (charts + maps: Chart.js blocks; Vega = kroki-only egress row; Leaflet = offline-tiles first)
+- phase 5 = landed (charts + maps: chartjs ```chart blocks (canvas + JSON-config + the source fallback); vega = the kroki-only EGRESS row (the confirm-gated encode); leaflet = the OFFLINE-TILES-FIRST map blocks (no tiles by default; OSM = an explicit opt-in key); suite TESTS-OK 33/33; front green)
+- phase 6 = next (experience: backlinks, slideshow mode, print/PDF stylesheet)
 
 ## Records
 - Waves land as daily-note sections (`memory/YYYY-MM-DD.md`, the gateway
