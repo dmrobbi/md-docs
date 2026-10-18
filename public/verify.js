@@ -406,12 +406,18 @@
   }).catch(function (e) {
     line('FAIL', 'harness-chain', String((e && e.message) || e));
   }).then(function () {
-    /* restore the operator's real settings */
-    try {
-      if (origStore === null) localStorage.removeItem(LS_KEY);
-      else localStorage.setItem(LS_KEY, origStore);
-      results.push('INFO the settings restored (the operator state untouched)');
-    } catch (e) { }
+    /* restore the operator's real settings — unless the demo/shot keep-mode */
+    var keepStore = false;
+    try { keepStore = new URLSearchParams(location.search).get('keep') === '1'; } catch (e) { }
+    if (keepStore) {
+      results.push('INFO keep-mode: the provisioned plugin state left ON (demo/shot mode)');
+    } else {
+      try {
+        if (origStore === null) localStorage.removeItem(LS_KEY);
+        else localStorage.setItem(LS_KEY, origStore);
+        results.push('INFO the settings restored (the operator state untouched)');
+      } catch (e) { }
+    }
     var runCount = pass + fail;
     var marker = fail
       ? 'WEB-VERIFY-RED ' + pass + '/' + runCount + ' (skips ' + skipN + ')'

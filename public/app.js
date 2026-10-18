@@ -422,9 +422,42 @@ function parseHash() {
   const parts = h.split('/');
   return { page: parts[0] || 'list', arg: parts[1] || null, anchor: parts[2] ? decodeURIComponent(parts[2]) : null };
 }
+/* deep-links: ?renderer=1 opens the Renderer pane on any route; ?slides=1 on
+ * a loaded doc enables the slides row if it is off and opens the deck — the
+ * presentation mode is shareable as a plain URL. */
+function maybeAutoParam() {
+  let q;
+  try { q = new URLSearchParams(location.search); } catch (e) { return; }
+  if (q.get('renderer') === '1') {
+    const paneEl = document.getElementById('rendererPane');
+    if (paneEl && paneEl.hidden) {
+      paneEl.hidden = false;
+      if (window.MDRendererUI && window.MDRendererUI.renderPane) window.MDRendererUI.renderPane();
+    }
+  }
+  if (q.get('slides') === '1') {
+    const ctl = document.querySelector('#docBody .mdp-slides-ctl .mdp-slides-open');
+    if (ctl && !document.getElementById('mdp-deck')) { ctl.click(); return; }
+    if (document.getElementById('docBody') && !ctl) {
+      try {
+        MDPluginLoader.setEnabled('slides', true);
+        MDApp.rerender();
+        setTimeout(() => {
+          const c2 = document.querySelector('#docBody .mdp-slides-ctl .mdp-slides-open');
+          if (c2 && !document.getElementById('mdp-deck')) c2.click();
+        }, 350);
+      } catch (e) { /* the row state = the user's choice; never forced */ }
+    }
+  }
+}
 async function route() {
   const { page, arg, anchor } = parseHash();
-  if (page === 'doc' && arg) return showDoc(decodeURIComponent(arg), anchor);
+  if (page === 'doc' && arg) {
+    await showDoc(decodeURIComponent(arg), anchor);
+    maybeAutoParam();
+    return;
+  }
+  maybeAutoParam();
   return showList();
 }
 window.addEventListener('hashchange', route);

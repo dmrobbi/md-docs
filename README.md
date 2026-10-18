@@ -1,153 +1,193 @@
-# md-docs
+# md-docs — a zero-dependency markdown doc viewer
 
-Zero-dependency Markdown doc site **and** SOC-dashboard addon (Node stdlib only, no npm install).
-Serves a browsable, searchable, filterable library of `.md` files with stable hashed links
-(`#/doc/<id>`) for the rendered view. Deployed standalone on any host with node — or mounted
-into an existing [soc-openclaw](https://github.com/dmrobbi/soc-openclaw) dashboard's nginx TLS
-front as its `/docs/` page.
+A browsable, searchable markdown library with a full **renderer plugin panel** —
+and the whole thing is stdlib-only Node: no npm install, no build step, no
+framework. Point it at a directory of `.md` files and it gives every document a
+stable hashed link, a rendered view, and an optional plugin stack everything
+from Mermaid diagrams to a slideshow mode. It also drops into an existing
+dashboard's nginx TLS front as its `/docs/` page.
+
+## What it looks like
+
+All screenshots are the real rendered output of this tree, shot on a scratch
+loopback instance.
+
+| Library (paginated, searchable, sortable) | A rendered doc — code chrome, math, Mermaid, charts, callouts, footnotes, tasks |
+|---|---|
+| ![library](docs/img/list.png) | ![rendered doc](docs/img/doc.png) |
+
+| The Renderer pane — 51 rows, 10 categories, egress + gated badges | Slideshow mode — `---` separators become a fullscreen deck |
+|---|---|
+| ![renderer pane](docs/img/pane.png) | ![slideshow](docs/img/slides.png) |
+
+| Backlinks — the doc-id mention graph from the live API | The self-testing web-verify page |
+|---|---|
+| ![backlinks](docs/img/backlinks.png) | ![web verify](docs/img/verify.png) |
+
+## Highlights
+
+- **Zero dependencies.** The server, the CLI, the test runner, the renderer
+  panel, and the browser verification harness are all stdlib Node or vanilla
+  browser JS. `marked` is vendored; heavy plugin libraries lazy-load from CDN
+  only when you enable their rows.
+- **Hashed links.** Every doc has a stable `#/doc/<id>` URL that survives
+  re-adds; anchors are deep-linkable (`#/doc/<id>/<slug>`).
+- **Search that actually searches.** Title/description instantly; full-text
+  content search over the whole library from 3+ characters, via a throttled
+  background deep-scan.
+- **The renderer panel.** 53-option census, 28 shipped modules, 51 toggleable
+  rows grouped by category with a count badge. Your choices persist in
+  `localStorage`; unset keys fall back to the registry defaults.
+- **Egress discipline.** Rows that would send document text to a remote
+  service (kroki, hosted embeds) carry a "requires network" badge and stay
+  disabled until a per-row confirm; the badge stays visible while on.
+  Local-only rows (including the backlinks scanner) are ordinary checkboxes.
+- **Presentation mode.** `---` separators split any doc into a fullscreen
+  deck: arrows/Space walk, Home/End jump, Esc exits — the normal view is
+  never mutated.
+- **Self-verifying.** The panel ships with a zero-dep browser harness and a
+  machine-generated verification report; see below.
+
+## Quick start (standalone)
+
+```
+git clone https://github.com/dmrobbi/md-docs md-docs
+cd md-docs
+node server.js                 # http://127.0.0.1:9992/ — md-docs.conf next to it
+node add.js file.md "Title" "Some description"
+```
+
+Then open the URL, hit `Renderer`, and turn on the diagram/math/chart families.
+
+## Deploy as the dashboard's /docs page
+
+Requirements: a dashboard host with node, and an nginx TLS site you want
+`/docs/` served under.
+
+```
+git clone https://github.com/dmrobbi/md-docs /opt/md-docs
+sudo SOC_USER=<install-user> bash /opt/md-docs/deploy/install.sh
+```
+
+The installer: copies the tree, writes a loopback-bound conf, installs and
+enables the system unit, inserts the marker-anchored `/docs/` location into
+the dashboard's nginx site, reloads nginx, seeds two sample docs if the
+library is empty, then verifies. Manual equivalent: render the unit template
+and drop `deploy/nginx-docs-location.conf` into the dashboard site.
+
+The same tool also installs as a **user-level unit** for personal/lab use
+(see `deploy/` and the auth section for the token-gated shape).
+
+## The library
+
+- `#/` — paginated cards (20/page), sort by new/old/title/size, instant
+  title+description search, content deep-scan at 3+ chars, add form (file or
+  paste), per-card remove.
+- `#/doc/<id>` — the rendered document, `Source` raw toggle, `Copy link`.
+- Optional front-matter (`title:` / `description:`) is stripped and used by
+  the metadata surface.
+
+## The renderer plugin panel
+
+One checkbox per plugin row; the families:
+
+- **diagrams** — Mermaid (the flagship: flowcharts, sequences, class,
+  state, ER, gantt, pie, gitgraph, mindmap, timeline, quadrant, xychart…),
+  Graphviz (viz.js WASM), nomnoml, MscGen, WaveDrom.
+- **math** — KaTeX `$$..$$` + `\(..\)`/`\[..\]` + mhchem `\ce{}`; the
+  formulas inside code never render.
+- **code** — fence chrome: per-fence copy (the RAW text, not html), line
+  numbers, the language label.
+- **syntax** — footnotes (with backrefs), GitHub-style alerts, `:::`
+  admonitions, attributes (`{.cls #id k=v}`), emoji shortcodes, heading ids
+  + hover copy-link, definition lists, YAML front-matter, figures
+  (`<figure>`/`<figcaption>`), interactive tasklists (persisted per doc).
+- **charts** — ```` ```chart ```` JSON blocks on a canvas (Chart.js), Vega
+  via the kroki encode (egress-gated).
+- **media** — asciinema `.cast` inline player (https-only), mp4/webm/mp3
+  players, PDF links as native `<embed>` (dependency-free), image lightbox
+  (glightbox).
+- **maps** — Leaflet blocks, offline-tiles-first: NO external tiles by
+  default, OSM = an explicit opt-in key.
+- **experience** — reading time, backlinks (a doc-id mention graph built
+  from the live API, throttled + cached), slideshow mode, the print/PDF
+  view (page-break aware, chrome hidden, external hrefs expanded).
+
+Unbuilt-but-planned rows stay visible greyed ("not built") so the panel
+doubles as a roadmap. The pick list with the shipped flags:
+`docs/PLUGINS-OPTIONS.md` — the as-built verification:
+`docs/PHASES-VERIFICATION.md`.
+
+Deep links: append `?renderer=1` to open the pane directly, or `?slides=1`
+on a document URL to drop straight into deck mode.
+
+## Configuration (`md-docs.conf`)
+
+```ini
+host = 127.0.0.1     # loopback = behind a fronting nginx; 0.0.0.0 = direct
+port = 9992
+docsDir = mds        # flat .md files; slugified basenames; .metadata.json sidecars
+# token =            # when set: every /api/* requires a bearer/X-MD-Docs-Token
+tls = false          # or true + tlsCert/tlsKey (an openssl self-signed auto-generates)
+```
+
+Precedence: env (`MD_DOCS_HOST`/`MD_DOCS_PORT`/`MD_DOCS_DIR`/`MD_DOCS_TOKEN`/
+`MD_DOCS_TLS*`) > this file > the defaults. The conf path relocates via
+`MD_DOCS_CONF` (a deployment's host-specific values can live in an untracked
+`md-docs.local.conf`). Restart the unit after edits.
+
+## API
+
+- `GET /api/docs` — the list (id/title/description/bytes/mtime)
+- `POST /api/docs` — add `{title, description, content}` → `{id}` (20 MB cap)
+- `GET /api/doc/<id>` — raw markdown
+- `DELETE /api/doc/<id>` — remove
+
+`add.js` = the CLI wrapper for add.
+
+## Auth (the optional bearer gate)
+
+Set `MD_DOCS_TOKEN` (env/EnvironmentFile) or the conf's `token` → every
+`/api/*` requires `Authorization: Bearer` or `X-MD-Docs-Token`
+(timing-safe, fail-closed). The static UI stays open; it prompts once,
+stashes the token in `localStorage`, and attaches it to every call.
+Recommended on a shared host: the token only in a `0600` env file + unit
+restart; rotate by editing + restarting.
+
+## Verification
+
+The panel verifies itself:
+
+```
+/snap- or system- chromium --headless=new --no-sandbox --disable-gpu \
+  --user-data-dir=<a throwaway dir> --virtual-time-budget=55000 \
+  --dump-dom 'http://<your-host>:<port>/verify.html' 2>/dev/null \
+  | grep -E 'PASS|FAIL|WEB-VERIFY'
+```
+
+Pass = the final marker `WEB-VERIFY-OK n/m`. The harness = engine-level
+checks (the real registry/store/loader/pipeline over a full trigger
+fixture, determinism x2) + app-level checks (driving the real app in a
+same-origin iframe: the pane clicks, row flips, the slideshow's real
+Escape, printcss, the backlinks scan completing). Read-only; the settings
+are saved/restored. The manual click-through battery + commands:
+`docs/WEB-VERIFY.md`. The machine-verified phase report:
+`docs/PHASES-VERIFICATION.md`.
 
 ## Layout
 
 | File | Role |
 |---|---|
-| `server.js` | the whole backend: static UI + JSON API + the optional bearer gate |
-| `md-docs.conf` | application settings (host, port, docsDir, optional token) |
-| `public/` | UI (vanilla JS; marked.js bundled locally, fallback renderer built in) |
-| `add.js` | CLI helper: `node add.js <file.md> [title] [description]` |
-| `deploy/md-docs-system.service.tpl` | systemd system-unit template (the dashboard-host install) |
-| `deploy/md-docs.service` | systemd user-unit (a lab-style install) |
-| `deploy/nginx-docs-location.conf` | the `/docs/` location block for the dashboard's nginx site |
-| `deploy/install.sh` | idempotent addon installer (unit + nginx + samples + verify) |
-| `mds/` | runtime doc storage (`.metadata.json` = title/description/added per doc). NOT committed. |
-
-## Configuration (`md-docs.conf`)
-
-```ini
-# Interface to bind; 127.0.0.1 = behind the dashboard's nginx front, 0.0.0.0 = all interfaces
-host = 127.0.0.1
-
-# Port to listen on
-port = 9992
-
-# Directory where the markdown doc files live (relative = next to the app, or any absolute path)
-docsDir = mds
-
-# Optional: set to require a bearer token on every /api/ request.
-# token =
-
-# ---- HTTPS ----
-# Enable TLS on the listening port (true/false)
-tls = false
-
-# Your own certificate + key (PEM files, both required when provided).
-# Leave empty with tls = true to AUTO-GENERATE a generic self-signed cert
-# (825-day ECDSA P-256, CN=md-docs, SANs = localhost/hostname/IPv4s)
-# cached in tls/ (gitignored); reused on later boots.
-tlsCert =
-tlsKey =
-```
-
-Precedence: env vars (`MD_DOCS_HOST` / `MD_DOCS_PORT` / `MD_DOCS_DIR` / `MD_DOCS_TOKEN` /
-`MD_DOCS_TLS` / `MD_DOCS_TLS_CERT` / `MD_DOCS_TLS_KEY`) override the conf file; the conf
-file overrides built-in defaults. Conf file path relocatable via `MD_DOCS_CONF`.
-Restart the service after edits.
-
-### Auth (the bearer gate)
-
-- `MD_DOCS_TOKEN` unset (or the conf's `token` unset) → `/api/*` fully open (lab mode).
-- Set → every `/api/*` request requires `Authorization: Bearer <token>` (curl/scripts and
-  `add.js`) or `X-MD-Docs-Token: <token>`. The static UI stays open; the UI prompts once for the
-  token, stashes it in `localStorage`, and attaches it to every API call. Comparison is
-  `crypto.timingSafeEqual` (the hashed halves), fail-closed.
-- Recommended on the dashboard host: put `MD_DOCS_TOKEN=<value>` in the unit's
-  `EnvironmentFile` (`/opt/md-docs/md-docs.env`, 0600), then restart the unit. Rotate by editing
-  the file + `sudo systemctl restart md-docs`.
-
-## Run standalone
-
-```
-node server.js                # uses md-docs.conf next to it
-```
-
-## API
-
-- `GET /api/docs` — list (id/title/description/bytes/mtime)
-- `POST /api/docs` — add `{title, description, content}` → `{id}` (20 MB body cap)
-- `GET /api/doc/<id>` — raw markdown
-- `DELETE /api/doc/<id>` — remove
-
-## Deploy as the SOC dashboard addon (the /docs page)
-
-Requirements: the dashboard host has node and the soc-openclaw dashboard's nginx TLS site
-(the `:4771` front).
-
-```
-git clone https://github.com/dmrobbi/md-docs /opt/md-docs
-sudo SOC_USER=wez bash /opt/md-docs/deploy/install.sh
-```
-
-The installer: copies the tree to `/opt/md-docs`, writes a loopback-bound conf (port 9992,
-docsDir under the install), installs and enables the system unit, inserts the marker-anchored
-`/docs/` location into the dashboard's nginx site, reloads nginx, drops two sample docs if the
-library is empty, then verifies.
-
-Live once installed: **https://192.168.1.106:4771/docs/** (the hashed-link library, same UI).
-
-Manual equivalent: render the unit template, drop the nginx location block from
-`deploy/nginx-docs-location.conf` into the dashboard's site before its closing `}`, `nginx -t`,
-reload.
-
-Serving an existing library instead of the samples: set `docsDir` (conf) or `MD_DOCS_DIR`
-(env) to the library's directory — flat `.md` files, slugified basenames.
-
-## UI
-
-- `#/` — list: 20/page pager, sort (newest/oldest/title/size), search title+description
-  instantly, full-content search at 3+ chars via a background deep-scan; add form (file or paste)
-- `#/doc/<id>` — rendered doc + Source toggle + Copy link + Remove
-- The token prompt appears once if the server runs gated; then silent.
-
-## Renderer plugin panel
-
-The doc view carries a **Renderer** button: one popover with a checkbox row per registered
-plugin (grouped by category with a live count badge). Toggling persists in `localStorage`
-(`md-docs.plugins`; unset keys = the registry defaults) and re-renders through the composite
-pipeline (`js/md-pipeline.js` — a clean marked instance per render, transformers in registry
-order, the phase-2-style hooks chained into one composite).
-
-- **Shipped families** (the full build plan in `todo.md`, phases 0-6): diagrams (mermaid,
-  graphviz/viz, nomnoml, mscgen, wavedrom), math (KaTeX + mhchem), code (fence chrome),
-  syntax (footnotes, GitHub alerts, admonitions, attributes, emoji, heading ids + copy-link,
-  definition lists, front-matter, figures, interactive tasklists), charts (Chart.js blocks,
-  Vega via kroki), media (asciinema inline player, video/audio players, native-PDF embeds,
-  lightbox), maps (Leaflet, offline-tiles-first), experience (reading time, backlinks,
-  slideshow mode, print/PDF stylesheet). The pick list with shipped flags:
-  `docs/PLUGINS-OPTIONS.md`.
-- **Egress policy** — rows that touch a remote service carry a "requires network" badge and
-  stay deny-by-default: unchecked + disabled until a per-row one-time confirm; the badge
-  stays visible while on. The kroki-routed rows (Vega; the pikchr route) and the embed
-  families (YouTube/Vimeo, X, CodePen, Spotify) never egress without that confirm. Backlinks
-  and the like are local-only: they talk to this server's own API.
-- **CDN vs vendored** — the shipped modules lazy-load their heavy libs from jsdelivr on first
-  enable (mermaid ~1.2 MB, the viz WASM, KaTeX, Chart.js, glightbox, Leaflet, asciinema
-  player). Only marked itself is vendored (`public/vendor/marked.min.js`); vendoring more =
-  an owner-gated call (`public/vendor/` takes them).
-- **PDF embeds** ship as the browser's native `<embed type="application/pdf">`
-  (dependency-free; the pdf.js WASM proved unnecessary).
-- **Mount notes** — thing1: `/opt/md-docs` behind the soc-dashboard's nginx TLS front at
-  `/docs/`; trooper2: `:9991` under `/bedimsec-md-docs`. The UI/API base resolves from
-  `document.baseURI`, so both mounts run one codebase.
-- **Interactive plugins with state** — tasklist toggles persist per doc id; backlinks caches
-  its scan for the session (throttled); the slideshow deck opens from clones (Esc = exit, the
-  normal view untouched); the print view ships everything already rendered (KaTeX/mermaid are
-  static DOM by print time).
-- **Tests** — `node tests/run.js` runs the discovered `test-*.js` + `battery-*.js`
-  (zero-dep runner); `--selftest` proves the red path. Batteries render with the REAL
-  marked, assert combined determinism x2 + solo-store isolation, and every phase gate
-  shipped inside its phase's commit.
+| `server.js` | the backend: static UI + JSON API + the optional token gate |
+| `md-docs.conf` | the app settings (relocatable; env > conf > defaults) |
+| `public/` | the UI: marked (vendored), the app, the plugin registry/loader/pipeline, the modules, the verify harness |
+| `docs/PLUGINS-OPTIONS.md` | the 53-option census with per-row shipped flags |
+| `docs/PHASES-VERIFICATION.md` | the machine census of the build + the browser-battery results |
+| `docs/WEB-VERIFY.md` | the real-interface verification: commands + the manual battery |
+| `deploy/` | the unit/nginx templates + the idempotent installer |
+| `add.js` | the CLI add helper |
+| `mds/` | the runtime doc storage (NOT committed) |
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
-<!-- project: idm.wezzel.com/crab-meat-repos/agentic-ai -->

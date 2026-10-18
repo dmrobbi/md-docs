@@ -45,7 +45,10 @@ rm -rf /home/wez/snap/chromium/common/mdocs-verify-b
 
 Note: `--dump-dom` = the page's final DOM — the results `<pre>` = inside the
 dump; the grep = the extraction. The harness read-only + the state save/restore
-= safe to run repeatedly.
+= safe to run repeatedly. Append `?keep=1` to the URL = the demo/shot keep-mode:
+the run leaves the built rows provisioned ON (the same throwaway profile then
+renders every doc view fully-loaded — useful for screenshots/demos; the default
+= always restore).
 
 Pass condition: the last marker = `WEB-VERIFY-OK n/m (skips k)` with m = n +
 0 fails. Any `FAIL`/`HARNESS-TIMEOUT` = red. `SKIP` = an honest not-proven
