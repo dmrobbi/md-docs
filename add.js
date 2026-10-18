@@ -20,7 +20,7 @@ try {
 
 const bindHost = process.env.MD_DOCS_HOST || conf.host || '127.0.0.1';
 const HOST = (!bindHost || bindHost === '0.0.0.0') ? '127.0.0.1' : bindHost;
-const PORT = parseInt(process.env.MD_DOCS_PORT || conf.port || '9991', 10);
+const PORT = parseInt(process.env.MD_DOCS_PORT || conf.port || '9992', 10);
 const TOKEN = (process.env.MD_DOCS_TOKEN || conf.token || '').trim();
 
 const [file, ...rest] = process.argv.slice(2);
