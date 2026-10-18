@@ -35,3 +35,7 @@
 @media (prefers-reduced-motion: reduce) {
   .mdp-copy-link { transition: none; }
 }
+
+/* phase-3 diagram boxes */
+.mdp-diagram { margin: 1.2em 0; padding: 10px; border: 1px solid var(--line, #d8d8d8); border-radius: 6px; overflow-x: auto; }
+.mdp-diagram svg { max-width: 100%; height: auto; }

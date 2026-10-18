@@ -255,11 +255,14 @@ plugin): detection + transform (`marked.use(...)`) + enhance
 
 ### T3.2-T3.5 — the offline family (census 3, 4, 5, 6)
 - **Files:** `public/js/plug-nomnoml.js`, `plug-mscgen.js`,
-  `plug-wavedrom.js`, `plug-pikchr.js` + one test file each
-  (`tests/test-nomnoml.js` …)
+  `plug-wavedrom.js` + one test file each
+  (`tests/test-nomnoml.js` …). T3.5 (pikchr) = CLOSED as a documented
+  decision: no reliable browser build exists (the census's own note) —
+  the row stays the egress-class in the registry (the kroki-encode =
+  owner-gated; the badge = "requires network"); no module built.
 - **Deps:** T2.8
 - **Build (per plugin):** the CDN lazy-load; the fence transform =
-  ```nomnoml / ```mscgen / ```wavedrom / ```pikchr → the placeholder;
+  ```nomnoml / ```mscgen / ```wavedrom → the placeholder;
   the enhance = the renderer call; the failure = source visible.
 - **Accept (tests each):** detection; the placeholder structure; the
   failure-path config.
@@ -370,7 +373,8 @@ plugin): detection + transform (`marked.use(...)`) + enhance
 - phase 0 = landed (github 20680f8; internal mirrored; TREES-MATCH 21acdbbb; suite TESTS-OK 3/3)
 - phase 1 = landed (the Renderer pane popover + the egress rows; suite TESTS-OK 4/4; the front greps green)
 - phase 2 = landed (the seven default plugins live: footnotes / alerts / heading-ids+copy-link / KaTeX+mhchem / asciinema-inline-player / fence-chrome / reading-time; the composite loader + ensureActive; the app mdp-anchor + doc/anchor routes; suite TESTS-OK 12/12; front green)
-- phase 3 = next (the diagram family: mermaid flagship + the offline four + viz.js)
+- phase 3 = landed (the diagram family: mermaid + nomnoml + mscgen + wavedrom + viz.js-graphviz; pikchr = the egress-row decision documented; suite TESTS-OK 18/18; front green)
+- phase 4 = next (syntax + media: admonitions, attributes, emoji, def-lists, front-matter, figures, tasklists, media players, galleries, pdf.js)
 
 ## Records
 - Waves land as daily-note sections (`memory/YYYY-MM-DD.md`, the gateway
