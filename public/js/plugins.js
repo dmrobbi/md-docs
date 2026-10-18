@@ -72,9 +72,7 @@
     }, { default: true, phase: 2 }),
     p('ytvimeo', 39, 'YouTube / Vimeo embeds', 'embeds', null, { egress: true }),
     p('media', '40,41', 'Video + audio players', 'media', null, { phase: 4 }),
-    p('pdf', 42, 'PDF.js inline viewer', 'media', {
-      js: [CDNP + 'pdfjs-dist@4.10.38/build/pdf.min.mjs', CDNP + 'pdfjs-dist@4.10.38/build/pdf.worker.min.mjs'],
-    }, { phase: 4 }),
+    p('pdf', 42, 'PDF inline viewer (native embed)', 'media', null, { phase: 4 }), // census #42 close-out: dependency-free native embed — the pdf.js WASM urls dropped
     p('lightbox', 43, 'Image lightbox + galleries', 'media', {
       js: [CDNP + 'glightbox@3.3.1/dist/js/glightbox.min.js'],
       css: [CDNP + 'glightbox@3.3.1/dist/css/glightbox.min.css'],
@@ -92,8 +90,8 @@
     p('backlinks', 51, 'Backlinks', 'experience', { js: ['js/plug-backlinks.js'] }, { phase: 6 }),
     p('slides', 52, 'Slideshow mode', 'experience', { js: ['js/plug-slides.js'] }, { phase: 6 }),
     p('printcss', 53, 'Print / PDF stylesheet', 'experience', { js: ['js/plug-printcss.js'], css: ['css/print.css'] }, { phase: 6 }),
-    p('search-verify', null, 'search (core check)', 'experience', null, { kind: 'verify', phase: 7 }),
-    p('darkmode-verify', null, 'dark mode (core check)', 'experience', null, { kind: 'verify', phase: 7 }),
+    p('search-verify', null, 'search — resolved: core', 'experience', null, { kind: 'verify', phase: 7 }),
+    p('darkmode-verify', null, 'dark mode — resolved: n-a', 'experience', null, { kind: 'verify', phase: 7 }),
   ];
   var byId = {};
   rows.forEach(function (r) {
